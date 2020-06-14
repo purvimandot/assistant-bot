@@ -1,0 +1,51 @@
+{
+    "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+    "version": "1.0",
+    "type": "AdaptiveCard",
+    "body": [
+        {
+            "type": "TextBlock",
+            "size": "medium",
+            "weight": "bolder",
+            "text": "Holiday Calendar"
+        },
+        {
+            "type": "FactSet",
+            "facts": [
+                {
+                    "title": "January 1:",
+                    "value": "New Year's Day"
+                },
+                {
+                    "title": "May 27:",
+                    "value": "Memorial Day"
+                },
+                {
+                    "title": "July 4:",
+                    "value": "Independence Day"
+                },
+                {
+                    "title": "September 2:",
+                    "value": "Labor Day"
+                },
+                {
+                    "title": "October 14:",
+                    "value": "Columbus Day"
+                },
+                {
+                    "title": "November 11:",
+                    "value": "Veterans Day"
+                },
+                {
+                    "title": "November 28:",
+                    "value": "Thanksgiving Day"
+                },
+                {
+                    "title": "December 25:",
+                    "value": "Christmas Day"
+                }
+            ]
+        } 
+    ]
+            
+}
