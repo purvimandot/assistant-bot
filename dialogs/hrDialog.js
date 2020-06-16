@@ -5,7 +5,7 @@ const { LuisRecognizer } = require('botbuilder-ai');
 const { InputHints, MessageFactory, CardFactory} = require('botbuilder');
 const { ConfirmPrompt, TextPrompt, WaterfallDialog, ComponentDialog, ChoiceFactory, ChoicePrompt } = require('botbuilder-dialogs');
 const holidayCard = require('./resources/holiday.json');
-const referalCard = require('./resources/referalPolicy.json');
+const referalCard = require('./resources/referalcard.json');
 
 const TEXT_PROMPT = 'textPrompt';
 const WATERFALL_DIALOG = 'waterfallDialog';
@@ -27,12 +27,18 @@ class hrDialog extends ComponentDialog {
         this.addDialog(new TextPrompt(TEXT_PROMPT))
         this.addDialog(new WaterfallDialog(WATERFALL_DIALOG, [
             this.HRintroStep.bind(this),
-            this.HRactStep.bind(this),
         ]));
+
         this.addDialog(new WaterfallDialog('actStep', [
             this.HRactStep.bind(this),
+            this.HRfinalStep.bind(this)
         ]));
-        
+
+        this.addDialog(new WaterfallDialog('helpStep', [
+            this.HRhelpStep.bind(this),
+            this.HRactStep.bind(this),
+            this.HRfinalStep.bind(this)
+        ]));
         
         this.addDialog(new WaterfallDialog('survey', [
             this.leaveDateStep.bind(this),
@@ -55,135 +61,8 @@ class hrDialog extends ComponentDialog {
     }
 
     async HRintroStep(stepContext) {
-        return await stepContext.prompt(CHOICE_PROMPT, {
-            prompt:'Here are a few suggestions you can try', 
-            choices: ChoiceFactory.toChoices(['Leave Management','Payroll','Recruitment', 'Survey','Holiday Calendar','Help'])
-        });      
+        return await stepContext.beginDialog('helpStep'); 
     }
-
-    
-    async HRactStep(stepContext) {
-        console.log("hractStep");
-        if (this.luisRecognizer.isConfigured) {
-            console.log("hractStep insides")  
-            const luisResult = await this.luisRecognizer.executeLuisQuery(stepContext.context);
-            switch (LuisRecognizer.topIntent(luisResult)) {
-                case 'LeaveManagement': {
-                    return await stepContext.prompt(CHOICE_PROMPT, {
-                        prompt:'Sure I can assist you with leave management', 
-                        choices: ChoiceFactory.toChoices(['RequestLeave', 'Leave Balance', 'Delete Leave Application'])
-                    });           
-                }
-
-                case 'RequestLeave': {
-                    
-                    var levreq = 'Plz write "i want 2 days sick leave"'
-                    await stepContext.prompt(TEXT_PROMPT,levreq);
-                    const leaveDetails = await this.leaveDetailsAccessor.get(stepContext.context, {});
-                    leaveDetails.application = stepContext.context.activity.text;
-                    leaveDetails.leaveType = this.luisRecognizer.getLeaveType(luisResult);
-                    leaveDetails.leaveDays = this.luisRecognizer.getLeaveDays(luisResult);
-                    leaveDetails.balance = 100 - leaveDetails.leaveDays;
-                    
-                    if(leaveDetails.leaveType && leaveDetails.leaveDays ){
-                        console.log('LUIS extracted these booking details:', JSON.stringify(leaveDetails));
-                        await stepContext.context.sendActivity(`Leave Application Applied \nLeave Type - ${leaveDetails.leaveType}\nLeave Days - ${leaveDetails.leaveDays}`);
-                        return await stepContext.endDialog();
-                    } else{
-                        return stepContext.replaceDialog('actStep');
-                    }
-                }
-
-                case 'DeleteLeave': {
-                    let leaveDetails = await this.leaveDetailsAccessor.get(stepContext.context, {});
-                    if(leaveDetails){
-                        await stepContext.context.sendActivity("Deleting your leave Application");
-                        leaveDetails = {}
-                        return await stepContext.endDialog();
-                    }else{
-                        await stepContext.context.sendActivity("You dont have any application pending!! ");
-                        return await stepContext.replaceDialog(this.initialDialogId, { restartMsg: 'What else can I do for you?' });
-                    }
-                    
-                }
-
-                case 'LeaveBalance': {
-                    let leaveDetails = await this.leaveDetailsAccessor.get(stepContext.context, {});
-                    if(leaveDetails.balance){
-                        await stepContext.context.sendActivity(`Your leave balance is ${leaveDetails.balance}`);
-                        return await stepContext.endDialog();
-                    }else{
-                        await stepContext.context.sendActivity(`Your leave balance is 100`);
-                        return await stepContext.endDialog();
-                    }
-                    
-                }
-
-                case 'ReferralPolicy': {
-                    await stepContext.context.sendActivity({
-                        attachments: [CardFactory.adaptiveCard(referalCard)]
-                    });
-                    return await stepContext.endDialog();
-                }
-
-                case 'Refer': {                    
-                    return stepContext.replaceDialog('refer');
-                }
-
-                case 'Payroll': {
-                
-                    const salesText = 'TODO:';
-                    await stepContext.context.sendActivity(salesText);
-                    break;
-                }
-
-                case 'Recruitment': {
-                    
-                    return await stepContext.prompt(CHOICE_PROMPT, {
-                        prompt:'Here are a few options to choose from', 
-                        choices: ChoiceFactory.toChoices(['Refer a Candidate', 'Referral Policy', 'Help'])
-                    }); 
-                }
-
-                case 'L&D': {
-                    
-                    return await stepContext.prompt(CHOICE_PROMPT, {
-                        prompt:'Here are a few options to choose from', 
-                        choices: ChoiceFactory.toChoices(['My Portfolio ', 'Training', 'Add Certificates','Add skills'])
-                    }); 
-                }
-
-                case 'Survey': {
-                    
-                    return stepContext.replaceDialog('survey');
-                }
-
-                case 'HolidayCalendar': {
-                    await stepContext.context.sendActivity("Your Holiday Calendar");
-                    await stepContext.context.sendActivity({
-                        attachments: [CardFactory.adaptiveCard(holidayCard)]
-                    });
-                    return await stepContext.endDialog();
-                }
-
-                case 'Help': {
-                    return await stepContext.replaceDialog(this.initialDialogId, { restartMsg: 'What else can I do for you?' });
-                }
-
-                default: {
-                    // Catch all for unhandled intents
-                    const didntUnderstandMessageText = `Sorry, I didn't get that. Please try asking in a different way (intent was ${ LuisRecognizer.topIntent(luisResult) })`;
-                    return await stepContext.endDialog();
-                    // await stepContext.context.sendActivity(didntUnderstandMessageText, didntUnderstandMessageText, InputHints.IgnoringInput);
-                }
-                
-            }
-        }
-        return await stepContext.replaceDialog(this.initialDialogId, { restartMsg: 'What else can I do for you?' }); 
-    }
-
-    
-
     async leaveDateStep(stepContext) {
         return await stepContext.prompt(TEXT_PROMPT,"Enter the time of your last leave.");  
     } 
@@ -238,7 +117,161 @@ class hrDialog extends ComponentDialog {
         await stepContext.context.sendActivity(`Your referral has been successfully submitted.`);
         return await stepContext.endDialog();
     }
-    
+
+    async HRhelpStep(stepContext) {
+        return await stepContext.prompt(CHOICE_PROMPT, {
+            prompt:'Here are a few suggestions you can try', 
+            choices: ChoiceFactory.toChoices(['Leave Management','Payroll','Recruitment', 'Survey','Holiday Calendar','Help'])
+        });  
+    }
+
+    async HRactStep(stepContext) {
+        
+        if (this.luisRecognizer.isConfigured) {
+            console.log("hractStep insides")
+            const luisResult = await this.luisRecognizer.executeLuisQuery(stepContext.context);
+            console.log("hractStep",LuisRecognizer.topIntent(luisResult));  
+            switch (LuisRecognizer.topIntent(luisResult)) {
+                case 'LeaveManagement': {
+                    return await stepContext.prompt(CHOICE_PROMPT, {
+                        prompt:'Sure I can assist you with leave management', 
+                        choices: ChoiceFactory.toChoices(['Request Leave', 'Leave Balance', 'Delete Leave Application'])
+                    });           
+                }
+
+                case 'RequestLeave': {
+                    
+                    var levreq = 'Plz write "i want 2 days sick leave"'
+                    return await stepContext.prompt(TEXT_PROMPT,levreq);
+                    
+                }
+
+                case 'Payroll': {
+                    console.log("Payroll");
+                    const salesText = 'TODO:';
+                    await stepContext.context.sendActivity(salesText);
+                    break;
+                }
+
+                case 'Recruitment': {
+                    
+                    return await stepContext.prompt(CHOICE_PROMPT, {
+                        prompt:'Here are a few options to choose from', 
+                        choices: ChoiceFactory.toChoices(['Refer a Candidate', 'Referral Policy', 'Help'])
+                    }); 
+                }
+
+                case 'L&D': {
+                    
+                    const itText = 'TODO: ';
+                    await stepContext.context.sendActivity(itText);
+                    break;
+                }
+
+                case 'Survey': {
+                    
+                    return stepContext.replaceDialog('survey');
+                }
+
+                case 'HolidayCalendar': {
+                    await stepContext.context.sendActivity("Your Holiday Calendar");
+                    await stepContext.context.sendActivity({
+                        attachments: [CardFactory.adaptiveCard(holidayCard)]
+                    });
+                    return await stepContext.endDialog();
+                }
+
+                case 'help': {
+                    return await stepContext.replaceDialog(this.initialDialogId, { restartMsg: 'What else can I do for you?' });
+                }
+
+                default: {
+                    // Catch all for unhandled intents
+                    const didntUnderstandMessageText = `Sorry, I didn't get that. Please try asking in a different way (intent was ${ LuisRecognizer.topIntent(luisResult) })`;
+                    await stepContext.context.sendActivity(didntUnderstandMessageText, didntUnderstandMessageText, InputHints.IgnoringInput);
+                    
+                    
+                }
+            }
+            return await stepContext.endDialog();
+        }
+        
+    }
+
+    async HRfinalStep(stepContext) {
+        console.log("hrfinalStep",stepContext.context)
+        
+        if (this.luisRecognizer.isConfigured) {
+            console.log("hrfinalStep insides")  
+            const luisResult = await this.luisRecognizer.executeLuisQuery(stepContext.context);
+            switch (LuisRecognizer.topIntent(luisResult)) {
+                case 'RequestLeave': {
+
+                    const leaveDetails = await this.leaveDetailsAccessor.get(stepContext.context, {});
+                    leaveDetails.application = stepContext.context.activity.text;
+                    leaveDetails.leaveType = this.luisRecognizer.getLeaveType(luisResult);
+                    leaveDetails.leaveDays = this.luisRecognizer.getLeaveDays(luisResult);
+                    leaveDetails.balance = 100 - leaveDetails.leaveDays;
+                    // leaveDetails.sickDate = this.luisRecognizer.getLeaveDate(luisResult);
+                    
+                    if(leaveDetails.leaveType && leaveDetails.leaveDays ){
+                        console.log('LUIS extracted these booking details:', JSON.stringify(leaveDetails));
+                        await stepContext.context.sendActivity(`Leave Application Applied \nLeave Type - ${leaveDetails.leaveType}\nLeave Days - ${leaveDetails.leaveDays}`);
+                        console.log(leaveDetails);
+                        return await stepContext.replaceDialog('helpStep', { restartMsg: 'What else can I do for you?' });
+                    } else{
+                        console.log("rewuest")
+                        return stepContext.replaceDialog('actStep');
+                    }
+                }
+
+                case 'DeleteLeave': {
+                    let leaveDetails = await this.leaveDetailsAccessor.get(stepContext.context, {});
+                    if(leaveDetails){
+                        console.log(leaveDetails);
+                        await stepContext.context.sendActivity("Deleting your leave Application");
+                        leaveDetails = {}
+                        return await stepContext.endDialog();
+                    }else{
+                        await stepContext.context.sendActivity("You dont have any application pending!! ");
+                        return await stepContext.replaceDialog(this.initialDialogId, { restartMsg: 'What else can I do for you?' });
+                    }
+                    
+                }
+
+                case 'LeaveBalance': {
+                    let leaveDetails = await this.leaveDetailsAccessor.get(stepContext.context, {});
+                    if(leaveDetails.balance){
+                        await stepContext.context.sendActivity(`Your leave balance is ${leaveDetails.balance}`);
+                        return await stepContext.endDialog();
+                    }else{
+                        await stepContext.context.sendActivity(`Your leave balance is 100`);
+                        return await stepContext.endDialog();
+                    }
+                    
+                }
+
+                case 'ReferralPolicy': {
+                    await stepContext.context.sendActivity({
+                        attachments: [CardFactory.adaptiveCard(referalCard)]
+                    });
+                    return await stepContext.endDialog();
+                }
+
+                case 'Refer': {                    
+                    return stepContext.replaceDialog('refer');
+                }
+
+                default: {
+                    // Catch all for unhandled intents
+                    const didntUnderstandMessageText = `Sorry, I didn't get that. Please try asking in a different way (intent was ${ LuisRecognizer.topIntent(luisResult) })`;
+                    await stepContext.context.sendActivity(didntUnderstandMessageText, didntUnderstandMessageText);
+                }
+            }
+        }
+        return await stepContext.replaceDialog(this.initialDialogId, { restartMsg: 'What else can I do for you?' });
+    }
+
 }
 
 module.exports.hrDialog = hrDialog;

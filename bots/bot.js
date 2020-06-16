@@ -41,7 +41,7 @@ class Bot extends ActivityHandler {
 
                 // Set the flag indicating the bot handled the user's first message.
                 await this.welcomedUserProperty.set(context, true);
-                console.log(input);
+                //console.log(input);
             } else {
                 await this.dialog.run(context, this.dialogState);
                 }

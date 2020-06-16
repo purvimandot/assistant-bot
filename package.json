@@ -1,8 +1,8 @@
 {
-    "name": "my-chat-bot",
+    "name": "echobot",
     "version": "1.0.0",
-    "description": "Demonstrate the core capabilities of the Microsoft Bot Framework",
-    "author": "Generated using Microsoft Bot Builder Yeoman generator v4.7.0",
+    "description": "Bot Builder v4 echo bot sample",
+    "author": "Microsoft",
     "license": "MIT",
     "main": "index.js",
     "scripts": {
@@ -16,7 +16,9 @@
         "url": "https://github.com"
     },
     "dependencies": {
-        "botbuilder": "~4.7.0",
+        "botbuilder": "~4.8.0",
+        "botbuilder-ai": "~4.8.0",
+        "botbuilder-dialogs": "~4.8.0",
         "dotenv": "^8.2.0",
         "restify": "~8.4.0"
     },

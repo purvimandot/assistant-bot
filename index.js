@@ -7,7 +7,7 @@ const { BotFrameworkAdapter, ConversationState, UserState, MemoryStorage } = req
 
 // This bot's main dialog.
 const { Bot } = require('./bots/bot');
-const { MainDialog } = require('./dialogs/MainDialog');
+const { MainDialog } = require('./dialogs/mainDialog');
 const { hrDialog } = require('./dialogs/hrDialog');
 const { salesDialog } = require('./dialogs/salesDialog');
 const { adminDialog } = require('./dialogs/adminDialog');
@@ -72,7 +72,7 @@ const luisRecognizer = new AssistLuisRecogniser(luisConfig);
 const AdminDialog = new adminDialog(userState,conversationState);
 const SalesDialog=new salesDialog(userState,conversationState);
 const HRDialog = new hrDialog(userState,conversationState, luisRecognizer);
-const mainDialog = new MainDialog(userState, conversationState, luisRecognizer, HRDialog, AdminDialog,SalesDialog),;
+const mainDialog = new MainDialog(userState, conversationState, luisRecognizer, HRDialog, AdminDialog,SalesDialog);
 const bot = new Bot(conversationState, userState, mainDialog);
 
 

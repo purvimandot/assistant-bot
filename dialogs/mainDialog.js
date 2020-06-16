@@ -47,16 +47,16 @@ class MainDialog extends ComponentDialog {
     async introStep(stepContext) {
         return await stepContext.prompt(CHOICE_PROMPT, {
             prompt:'Here are a few suggestions you can try', 
-            choices: ChoiceFactory.toChoices(['HR', 'SALES', 'ADMIN'])
+            choices: ChoiceFactory.toChoices(['HR', 'Sales', 'Admin'])
         });      
         }
 
     async actStep(stepContext) {
 
         if (this.luisRecognizer.isConfigured) {
-        //console.log("inside act if", stepContext.result.value)
+        console.log("inside act if", stepContext.result.value)
         const luisResult = await this.luisRecognizer.executeLuisQuery(stepContext.context);
-        //console.log(luisResult)
+        console.log(luisResult)
         switch (LuisRecognizer.topIntent(luisResult)) {
         case 'HR': {
             return await stepContext.beginDialog('hrDialog');

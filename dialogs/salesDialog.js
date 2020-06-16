@@ -14,9 +14,7 @@ const CHOICE_PROMPT = 'CHOICE_PROMPT';
 
 class salesDialog extends ComponentDialog {
     constructor(userState, conversationState, luisRecognizer) {
-        super(SALES_DIALOG);
-        this.leaveDetailsAccessor = userState.createProperty(LEAVE_DETAILS);
-        
+        super(SALES_DIALOG);     
         this.userState = userState;
         this.conversationState = conversationState;
         this.luisRecognizer = luisRecognizer;
@@ -40,31 +38,30 @@ class salesDialog extends ComponentDialog {
     }
 
     
-    async SALESactStep(stepContext) {
-            switch (stepContext.context.result.value) {
-                case 'Target': {
-                    return await stepContext.prompt(CHOICE_PROMPT, {
-                        prompt:'Please select the account', 
-                        choices: ChoiceFactory.toChoices(['Contoso Retail'])
-                    });           
-                }
-
-                case 'CreateOpportunity': {
-                    return await stepContext.prompt(CHOICE_PROMPT, {
-                        prompt:'Please select the account', 
-                        choices: ChoiceFactory.toChoices(['Contoso Retail'])
-                    });  
-                    
-                }
-
-                case 'Achieved': {
-                    return await stepContext.prompt(CHOICE_PROMPT, {
-                        prompt:'Please select the account', 
-                        choices: ChoiceFactory.toChoices(['Contoso Retail'])
-                    });  
-                    
-                }  
+    async SALESactStep(stepContext) {    
+        switch (stepContext.result.value) {
+            case 'Target': {
+                return await stepContext.prompt(CHOICE_PROMPT, {
+                    prompt:'Please select the account', 
+                    choices: ChoiceFactory.toChoices(['Contoso Retail'])
+                });           
             }
+
+            case 'CreateOpportunity': {
+                return await stepContext.prompt(CHOICE_PROMPT, {
+                    prompt:'Please select the account', 
+                    choices: ChoiceFactory.toChoices(['Contoso Retail'])
+                });           
+            }
+
+            case 'Achieved': {
+                return await stepContext.prompt(CHOICE_PROMPT, {
+                    prompt:'Please select the account', 
+                    choices: ChoiceFactory.toChoices(['Contoso Retail'])
+                });           
+            }
+
+        }
         
         return await stepContext.replaceDialog(this.initialDialogId, { restartMsg: 'What else can I do for you?' }); 
     }
